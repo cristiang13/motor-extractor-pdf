@@ -80,6 +80,26 @@ lectura de archivo.
   `03_federal_register_...pdf`) y un caso límite de tabla que cruza
   páginas (`05_table_warn_layoff_report.pdf`) documentado como riesgo de
   falso positivo para la heurística de header/footer.
+- Implementado el caso base de extracción: `models.py` (BBox, Block,
+  BlockType, Page, Document), `extraction/blocks.py`
+  (`extract_raw_blocks`), `extraction/reading_order.py`
+  (`order_single_column`, heurística y0→x0, documentada como válida solo
+  para 1 columna) y `extraction/document.py` (`extract_document`, función
+  pública, acepta path o bytes). `extraction/` asigna `BlockType.UNKNOWN` a
+  todo bloque de texto — la clasificación en paragraph/table/header_footer
+  la hace `classification/`, que todavía no existe. `requires_ocr` por
+  página se calcula ya en esta función (texto extraíble vacío), no hace
+  falta una heurística aparte para eso.
+- Límite conocido: los stubs (`py.typed`) que trae `pymupdf` están
+  incompletos — `get_text()`, `Rect.width/height` y la iteración de
+  `Document` no quedan tipados en modo estricto. Se resolvió con
+  `typing.cast` explícito (tipo `RawBlock` documentando la forma real de
+  cada tupla) más `# pyright: ignore[reportUnknownMemberType]` acotado a
+  la línea exacta de la llamada, en vez de bajar `typeCheckingMode` o
+  ignorar el archivo completo. Test suite del caso 1 columna
+  (`tests/extraction/test_document_single_column.py`, fixture
+  `01_single_column_pdflatex.pdf`) pasando, Ruff y Pyright estricto
+  limpios.
 
 ## Decisiones de arquitectura diferidas
 
