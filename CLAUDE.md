@@ -68,6 +68,18 @@ lectura de archivo.
 - Pendiente antes de escribir la primera heurística: reunir 5-8 PDFs reales
   de prueba (1 columna, 2 columnas, con tabla, escaneado, header/footer
   repetido). No se usarán fixtures sintéticas como punto de partida.
+- Se reunieron 7 PDFs reales en `tests/fixtures/` (detalle y procedencia en
+  `tests/fixtures/README.md`), tomados de las suites de test de
+  `pdfplumber`, `camelot`, `ocrmypdf` y `py-pdf/sample-files`, más
+  documentos públicos de gobierno (US Federal Register, reporte WARN de
+  California, presupuesto de India). Ninguno es del dominio
+  marítimo/aduanero propio del proyecto — es la mejor aproximación pública
+  disponible por caso de layout; si aparecen documentos reales del dominio
+  (anonimizados), se suman sin reemplazar estos. Cubren los 5 casos
+  pedidos, con un caso combinado (2 columnas + header/footer repetido en
+  `03_federal_register_...pdf`) y un caso límite de tabla que cruza
+  páginas (`05_table_warn_layoff_report.pdf`) documentado como riesgo de
+  falso positivo para la heurística de header/footer.
 
 ## Decisiones de arquitectura diferidas
 
