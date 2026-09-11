@@ -48,6 +48,12 @@ no cubran igual de bien.
   anterior — caso conocido difícil para "orden de lectura" y para
   "header/footer" (el texto que se repite arriba de página 2 en realidad
   es continuación de tabla, no un header real; riesgo de falso positivo).
+  **Verificado con la heurística implementada** (`classify_header_footer`,
+  ver CLAUDE.md 2026-09-12): el riesgo no se materializa — el texto de las
+  filas de tabla cambia de página a página (fechas, nombres de empresa),
+  así que no hay coincidencia de texto normalizado, y la posición vertical
+  también varía según cuánto contenido cayó en la página anterior. Cero
+  falsos positivos en este fixture.
 - `06` y `07`: `has_text=False`, ambas páginas contienen exactamente 1
   imagen y cero bloques de texto extraíble — confirman el caso
   `requires_ocr=True`.

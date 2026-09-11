@@ -161,6 +161,39 @@ lectura de archivo.
   Tests nuevos en `tests/extraction/test_blocks_rotation_and_images.py`.
   18 tests en total, Ruff y Pyright estricto limpios.
 
+### 2026-09-12
+- Implementada la primera heurística de `classification/`:
+  `classify_header_footer(document) -> Document`
+  (`src/pdf_engine/classification/header_footer.py`), primer módulo real
+  de esa carpeta (antes solo `__init__.py` vacío). Toma bloques cerca del
+  borde superior/inferior de la página (18% de la altura — calibrado
+  contra fixtures reales, 12% dejaba afuera números de página que caen
+  justo antes del margen), agrupa por posición (tolerancia 3pt) + texto
+  normalizado (dígitos reemplazados por `#`, para tolerar números de
+  página/fecha que cambian), y clasifica como `HEADER_FOOTER` los grupos
+  que aparecen en al menos la mitad de las páginas del documento. No pisa
+  bloques ya clasificados por otra heurística (`type != UNKNOWN` se
+  ignora). Con menos de 2 páginas devuelve el documento sin cambios (no
+  hay "repetición entre páginas" posible).
+- Validado contra 4 fixtures reales: detecta el footer de número de
+  página en `01` (4/4 páginas) y `02` (3/3); detecta el footer literal del
+  US Federal Register en `03` (15/15 páginas, texto idéntico) y también
+  su header, aunque fragmentado en 2 grupos de 7 páginas cada uno (el
+  header alterna de posición horizontal según página par/impar, formato
+  real de encuadernado a doble página); no genera ningún falso positivo
+  en `05` (WARN report), confirmando el riesgo que ya habíamos anotado en
+  el Paso 3 — el texto y la posición de las filas de tabla que continúan
+  entre páginas varían lo suficiente como para no calzar con la
+  heurística.
+- Límite conocido y sin resolver a propósito: la página 1 de `03` tiene el
+  header partido en bloques distintos a las demás páginas (el número de
+  página no viene fusionado con el título en esa página específica), así
+  que el texto normalizado no coincide y esa página queda sin detectar.
+  Fijado como test (`test_federal_register_header_detected_on_most_but_not_first_page`),
+  no como bug oculto.
+- Tests en `tests/classification/test_header_footer.py`. 24 tests en
+  total, Ruff y Pyright estricto limpios.
+
 ## Decisiones de arquitectura diferidas
 
 - **OCR real**: se difiere completamente. Fase 1 solo detecta y marca
