@@ -193,6 +193,45 @@ lectura de archivo.
   no como bug oculto.
 - Tests en `tests/classification/test_header_footer.py`. 24 tests en
   total, Ruff y Pyright estricto limpios.
+- Implementada `classify_tables(document, source) -> Document`
+  (`src/pdf_engine/classification/table.py`). A diferencia de
+  `classify_header_footer`, necesita `source` además del `Document`:
+  PyMuPDF suele fusionar una tabla entera en un solo `Block` (confirmado
+  con el fixture 04: 38 filas x ~9 columnas en un único bloque), así que
+  la posición de cada bloque ya no alcanza — hace falta la posición de
+  cada palabra dentro de ese bloque, y eso se perdió al armar el `Block`.
+  Se vuelve a abrir el PDF con PyMuPDF y se consulta
+  `get_text("words", clip=bbox)` por cada bloque `UNKNOWN`.
+  Heurística: agrupar palabras en filas por y0, y por fila registrar
+  "inicios de columna" (primera palabra, más cualquier palabra separada
+  de la anterior por un hueco >= 8pt). Si al menos 3 posiciones de inicio
+  de columna se repiten en >= 30% de las filas (piso de 4 filas), y el
+  bloque tiene >= 4 filas, se clasifica como `TABLE`.
+- Calibrado contra PDFs reales antes de fijar los números: un primer
+  intento contando cualquier x0 de palabra que se repitiera en >= 3 filas
+  daba 47-85 "columnas" también en párrafos normales (falso positivo
+  garantizado) — el problema es que en prosa muchas palabras arrancan por
+  coincidencia cerca de la misma posición en líneas distintas. Filtrar a
+  solo posiciones que vienen después de un hueco >= 8pt (no cualquier
+  palabra, solo la que sigue a un espacio "de columna") baja eso a 1 sola
+  posición recurrente en párrafos reales (el margen izquierdo) tanto en
+  `01` como en `02`, mientras la tabla de `04` sigue mostrando 13.
+- Validado contra 5 fixtures: detecta la tabla de `04` (1 bloque, todo el
+  documento); detecta una tabla real en la página 3 de `02` que no
+  estaba planeada (se agregó como cobertura extra, ver
+  `tests/fixtures/README.md`); cero falsos positivos en `01` (puro
+  párrafo) y en `03` (texto con bullets/direcciones estructuradas pero
+  sin tabla real).
+- Límite conocido, no resuelto a propósito: la heurística trabaja por
+  bloque tal como lo segmenta PyMuPDF, sin fusionar bloques adyacentes.
+  En `05` (WARN report), la mayoría de las páginas quedan con la tabla
+  completa en un solo bloque (se detectan: 1, 3-14), pero en las páginas
+  2, 15 y 16 PyMuPDF arma un bloque por fila — cada uno con muy pocas
+  líneas, nunca llega al mínimo de 4 filas. Fijado como test
+  (`test_warn_report_known_limitation_depends_on_pymupdf_block_segmentation`),
+  documentando exactamente qué páginas se detectan y cuáles no.
+- Tests en `tests/classification/test_table.py`. 30 tests en total, Ruff
+  y Pyright estricto limpios.
 
 ## Decisiones de arquitectura diferidas
 

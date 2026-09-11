@@ -18,7 +18,7 @@ no cubran igual de bien.
 | Archivo | Caso que cubre | Páginas | Fuente | Licencia |
 |---|---|---|---|---|
 | `01_single_column_pdflatex.pdf` | 1 columna (caso base) | 4 | [py-pdf/sample-files](https://github.com/py-pdf/sample-files) — `004-pdflatex-4-pages` | CC-BY-SA-4.0 |
-| `02_two_column_pdflatex.pdf` | 2 columnas | 3 | [py-pdf/sample-files](https://github.com/py-pdf/sample-files) — `026-latex-multicolumn` | CC-BY-SA-4.0 |
+| `02_two_column_pdflatex.pdf` | 2 columnas **+** tabla (página 3, descubierta al implementar `classify_tables`) | 3 | [py-pdf/sample-files](https://github.com/py-pdf/sample-files) — `026-latex-multicolumn` | CC-BY-SA-4.0 |
 | `03_federal_register_3col_header_footer.pdf` | 3 columnas **+** header/footer repetido — caso límite fuera de alcance (Fase 1 solo cubre 1 y 2 columnas) | 15 | [jsvine/pdfplumber](https://github.com/jsvine/pdfplumber) tests/pdfs — publicación real del *US Federal Register* (regla propuesta FAA, 2020) | Documento del gobierno de EE.UU., dominio público (17 U.S.C. §105) |
 | `04_table_india_budget.pdf` | Tabla (alineación de columnas numéricas) | 1 | [camelot-dev/camelot](https://github.com/camelot-dev/camelot) tests/files `budget.pdf` — resumen del presupuesto del gobierno de India 2014-2015 | Documento de gobierno, redistribuido como fixture de test en el repo de Camelot (MIT) |
 | `05_table_warn_layoff_report.pdf` | Tabla multi-página (filas que continúan entre páginas) | 16 | [jsvine/pdfplumber](https://github.com/jsvine/pdfplumber) tests/pdfs — reporte WARN (avisos de despido masivo) de California | Documento de gobierno estatal (CA), dominio público |
@@ -57,3 +57,14 @@ no cubran igual de bien.
 - `06` y `07`: `has_text=False`, ambas páginas contienen exactamente 1
   imagen y cero bloques de texto extraíble — confirman el caso
   `requires_ocr=True`.
+- `02` página 3: contiene "Table 1: EU Countries Information", una tabla
+  real que no estaba planeada al elegir este fixture — apareció al
+  inspeccionar bloques para la heurística de 2 columnas y quedó como
+  cobertura extra para `classify_tables`.
+- `05`, revisado otra vez para `classify_tables` (ver CLAUDE.md
+  2026-09-12): PyMuPDF no segmenta la tabla igual en todas las páginas —
+  en la mayoría junta la tabla completa en un solo bloque (se detecta),
+  pero en las páginas 2, 15 y 16 arma un bloque por fila (cada uno
+  demasiado corto para pasar el mínimo de filas). Caso límite real de que
+  la heurística trabaja por bloque tal como lo entrega PyMuPDF, sin fusionar
+  bloques adyacentes.
