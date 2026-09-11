@@ -141,15 +141,25 @@ lectura de archivo.
   lectura humano esperado. Test en
   `tests/extraction/test_reading_order_two_column.py`. Ruff y Pyright
   estricto limpios (14 tests en total).
-- Pendiente, reportado por `/code-review` sobre el trabajo del Paso 4 y
-  todavía sin resolver: (1) bbox se extrae en coordenadas sin rotación
-  pero `Page.width/height` sí refleja `/Rotate` — inconsistente en
-  páginas rotadas; (2) `get_text("blocks")` se llama sin
-  `TEXT_PRESERVE_IMAGES`, así que `BlockType.IMAGE` es código muerto y las
-  imágenes embebidas desaparecen de la extracción; (3) cada página se
-  procesa dos veces (`get_text("blocks")` y `get_text("text")` solo para
-  `requires_ocr`), trabajo duplicado evitable. (1) y (2) son bugs de
-  correctness reales, no solo eficiencia — quedan para la próxima sesión.
+- Resueltos los 3 hallazgos de `/code-review` sobre el trabajo del Paso 4:
+  (1) `extraction/blocks.py` ahora multiplica cada bbox por
+  `page.rotation_matrix` antes de guardarlo, así queda en el mismo espacio
+  de coordenadas que `Page.width/height` (que sí refleja `/Rotate`).
+  Verificado forzando `page.set_rotation(90)` sobre el fixture 01: antes
+  el bbox quedaba fuera de los límites de la página rotada, ahora no. (2)
+  `get_text("blocks")` ahora se llama con
+  `flags=TEXTFLAGS_BLOCKS | TEXT_PRESERVE_IMAGES`; sin eso `block_type`
+  nunca era 1 y `BlockType.IMAGE` era código muerto. Verificado con el
+  fixture 05 (tiene un logo): antes 23 bloques y 0 imágenes, ahora 24
+  bloques y 1 `BlockType.IMAGE` (con `text=""`, no la descripción interna
+  de PyMuPDF). (3) `extract_document` ya no llama a `get_text("text")`
+  aparte para `requires_ocr` — lo deriva de si algún bloque no-imagen ya
+  extraído tiene texto. Al verificar esto con el fixture 06 (escaneado
+  multi-página) apareció un dato real interesante: la página 4 mezcla
+  imagen con texto superpuesto real (`requires_ocr=False` ahí, `True` en
+  el resto) — quedó fijado como test, no es un caso sintético.
+  Tests nuevos en `tests/extraction/test_blocks_rotation_and_images.py`.
+  18 tests en total, Ruff y Pyright estricto limpios.
 
 ## Decisiones de arquitectura diferidas
 
