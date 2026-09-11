@@ -8,17 +8,17 @@ from typing import cast
 import pymupdf
 
 from pdf_engine.extraction.blocks import extract_raw_blocks
-from pdf_engine.extraction.reading_order import order_single_column
+from pdf_engine.extraction.reading_order import order_page
 from pdf_engine.models import Document, Page
 
 
 def extract_document(source: Path | bytes) -> Document:
     """Extrae bloques y orden de lectura de cada página de un PDF.
 
-    `source` es un path a archivo o los bytes del PDF ya leídos. Asume
-    layout a 1 columna (order_single_column); el soporte para 2 columnas se
-    agrega en una heurística aparte que decide, por página, qué función de
-    orden usar.
+    `source` es un path a archivo o los bytes del PDF ya leídos. El orden
+    de lectura por página lo decide order_page(): 1 columna o 2 columnas
+    según lo que detecte geométricamente (ver
+    extraction/reading_order.py).
     """
     pdf = (
         pymupdf.open(stream=source, filetype="pdf")
@@ -32,7 +32,6 @@ def extract_document(source: Path | bytes) -> Document:
         for index in range(len(pdf)):
             pdf_page = pdf[index]
             raw_blocks = extract_raw_blocks(pdf_page)
-            ordered_blocks = order_single_column(raw_blocks)
             page_text = cast(
                 "str",
                 pdf_page.get_text("text"),  # pyright: ignore[reportUnknownMemberType]
@@ -41,6 +40,7 @@ def extract_document(source: Path | bytes) -> Document:
                 "tuple[float, float]",
                 (pdf_page.rect.width, pdf_page.rect.height),  # pyright: ignore[reportUnknownMemberType]
             )
+            ordered_blocks = order_page(raw_blocks, width)
             pages.append(
                 Page(
                     number=index + 1,

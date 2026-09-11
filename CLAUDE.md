@@ -101,6 +101,56 @@ lectura de archivo.
   `01_single_column_pdflatex.pdf`) pasando, Ruff y Pyright estricto
   limpios.
 
+### 2026-09-11
+- Corrección de un hallazgo anterior: `tests/fixtures/03_...pdf` no es un
+  documento a 2 columnas — es a **3** columnas (x0 en 45, 222 y 399 pt).
+  Se descubrió al implementar la heurística de 2 columnas, verificando
+  bbox reales en vez de solo el conteo aproximado de palabras
+  izquierda/derecha que se usó en el Paso 3. Se renombró a
+  `03_federal_register_3col_header_footer.pdf` y se reutilizó como el
+  caso límite de "3+ columnas, fuera de alcance" en vez de caso base de
+  2 columnas.
+- Implementado soporte de 2 columnas: `extraction/reading_order.py` ahora
+  expone `order_page(blocks, page_width)`, el punto de entrada que usa
+  `extraction/document.py` (reemplaza la llamada directa a
+  `order_single_column`). Heurística geométrica: línea media calculada
+  del contenido real de la página (min x0 / max x1 de los bloques, no
+  `page_width/2` — el gutter real no siempre cae en el centro geométrico,
+  confirmado con el fixture 02), bloques clasificados en
+  izquierda/derecha/centrado según si cruzan esa línea. Si hay bloques a
+  ambos lados: centrados-arriba (título/autor/fecha) -> columna izquierda
+  -> columna derecha -> centrados-abajo (pie de página). Si no hay
+  bloques a ambos lados, cae a `order_single_column` sin cambios (no
+  rompe el caso de 1 columna, los 8 tests de esa fase siguen pasando
+  intactos).
+- Límite conocido y decidido a propósito: **no se intentó soportar 3+
+  columnas**. En vez de eso, `_looks_like_hidden_column` detecta cuando
+  varios bloques "centrados" (los que quedan fuera de la columna
+  izquierda/derecha detectada) están alineados entre sí y son angostos
+  como una columna — señal de que hay una columna del medio que la
+  heurística no reconoció como tal — y en ese caso toda la página cae a
+  `order_single_column` en vez de producir un orden de 2 columnas
+  incorrecto pero con apariencia de válido. Verificado con el fixture 03
+  (3 columnas reales): cae al fallback y el test
+  `tests/extraction/test_reading_order_three_column_limitation.py` fija
+  ese comportamiento como regresión, no como bug silencioso. Si se agrega
+  soporte a 3+ columnas en el futuro, ese test debe actualizarse.
+- Validado contra el fixture 02 (2 columnas limpias, LaTeX): el orden
+  resultante es título -> autor -> fecha -> columna izquierda completa ->
+  columna derecha completa -> número de página, exactamente el orden de
+  lectura humano esperado. Test en
+  `tests/extraction/test_reading_order_two_column.py`. Ruff y Pyright
+  estricto limpios (14 tests en total).
+- Pendiente, reportado por `/code-review` sobre el trabajo del Paso 4 y
+  todavía sin resolver: (1) bbox se extrae en coordenadas sin rotación
+  pero `Page.width/height` sí refleja `/Rotate` — inconsistente en
+  páginas rotadas; (2) `get_text("blocks")` se llama sin
+  `TEXT_PRESERVE_IMAGES`, así que `BlockType.IMAGE` es código muerto y las
+  imágenes embebidas desaparecen de la extracción; (3) cada página se
+  procesa dos veces (`get_text("blocks")` y `get_text("text")` solo para
+  `requires_ocr`), trabajo duplicado evitable. (1) y (2) son bugs de
+  correctness reales, no solo eficiencia — quedan para la próxima sesión.
+
 ## Decisiones de arquitectura diferidas
 
 - **OCR real**: se difiere completamente. Fase 1 solo detecta y marca

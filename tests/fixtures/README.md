@@ -19,7 +19,7 @@ no cubran igual de bien.
 |---|---|---|---|---|
 | `01_single_column_pdflatex.pdf` | 1 columna (caso base) | 4 | [py-pdf/sample-files](https://github.com/py-pdf/sample-files) — `004-pdflatex-4-pages` | CC-BY-SA-4.0 |
 | `02_two_column_pdflatex.pdf` | 2 columnas | 3 | [py-pdf/sample-files](https://github.com/py-pdf/sample-files) — `026-latex-multicolumn` | CC-BY-SA-4.0 |
-| `03_federal_register_2col_header_footer.pdf` | 2 columnas **+** header/footer repetido | 15 | [jsvine/pdfplumber](https://github.com/jsvine/pdfplumber) tests/pdfs — publicación real del *US Federal Register* (regla propuesta FAA, 2020) | Documento del gobierno de EE.UU., dominio público (17 U.S.C. §105) |
+| `03_federal_register_3col_header_footer.pdf` | 3 columnas **+** header/footer repetido — caso límite fuera de alcance (Fase 1 solo cubre 1 y 2 columnas) | 15 | [jsvine/pdfplumber](https://github.com/jsvine/pdfplumber) tests/pdfs — publicación real del *US Federal Register* (regla propuesta FAA, 2020) | Documento del gobierno de EE.UU., dominio público (17 U.S.C. §105) |
 | `04_table_india_budget.pdf` | Tabla (alineación de columnas numéricas) | 1 | [camelot-dev/camelot](https://github.com/camelot-dev/camelot) tests/files `budget.pdf` — resumen del presupuesto del gobierno de India 2014-2015 | Documento de gobierno, redistribuido como fixture de test en el repo de Camelot (MIT) |
 | `05_table_warn_layoff_report.pdf` | Tabla multi-página (filas que continúan entre páginas) | 16 | [jsvine/pdfplumber](https://github.com/jsvine/pdfplumber) tests/pdfs — reporte WARN (avisos de despido masivo) de California | Documento de gobierno estatal (CA), dominio público |
 | `06_scanned_multipage.pdf` | Escaneado, sin texto extraíble, multi-página | 6 | [ocrmypdf/OCRmyPDF](https://github.com/ocrmypdf/OCRmyPDF) tests/resources `multipage.pdf` | MIT (fixture de test de OCRmyPDF) |
@@ -33,9 +33,14 @@ no cubran igual de bien.
 - `03`: header (`Federal Register / Vol. 85, No. 152 / ...`) y footer
   (`VerDate Sep<11>2014 ... jbell on DSKJLSW7X2PROD with PROPOSALS`) se
   repiten literalmente en la misma posición en todas las páginas
-  verificadas (1-3). Es también el único fixture con columnas + header/footer
-  combinados — buen caso límite para probar que ambas heurísticas no
-  interfieren entre sí.
+  verificadas (1-3). **Corrección** (encontrada al implementar la
+  heurística de 2 columnas): no son 2 columnas, son 3 (x0 en 45, 222 y
+  399 puntos) — el chequeo inicial por bloques de palabras
+  izquierda/derecha no distingue 3 columnas de 2. Se renombró de
+  `03_federal_register_2col_...` a `03_federal_register_3col_...` y pasó
+  a ser el caso límite que documenta el fallback de `order_page()` en
+  layouts de 3+ columnas (fuera de alcance de Fase 1), en vez del caso
+  base de 2 columnas.
 - `04`: tabla real de cifras presupuestarias, columnas numéricas alineadas
   verticalmente, sin líneas de tabla explícitas dibujadas (fuerza a la
   heurística de alineación en vez de detección de bordes).
